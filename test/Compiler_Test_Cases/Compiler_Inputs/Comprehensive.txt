@@ -1,0 +1,3 @@
+// This program tests everything
+subr 0 main
+ret

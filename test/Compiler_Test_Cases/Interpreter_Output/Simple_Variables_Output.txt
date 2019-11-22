@@ -1,0 +1,13 @@
+111
+222
+444
+444
+333
+222
+
+Compile values:
+PC: 16
+sp: -1
+rstack: empty
+fpsp: -1
+fpstack: empty

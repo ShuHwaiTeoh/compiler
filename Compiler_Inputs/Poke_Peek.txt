@@ -1,0 +1,3 @@
+// The goal of this program is to test peek and poke
+subr 0 main
+ret
