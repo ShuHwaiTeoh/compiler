@@ -21,6 +21,7 @@ public class Main{
 	   }
 	   catch(IOException e){e.printStackTrace();}
 	   Bytecode bc = Bytecode(source);
+	   
 	   ArrayList<Byte> destination = new ArrayList<Byte>();
 	   bc.compile(destination);
    }
