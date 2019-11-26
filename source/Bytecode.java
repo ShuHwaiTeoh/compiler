@@ -40,18 +40,19 @@ public class Bytecode {
 	// opcodes
 	public ArrayList<Integer> mem = new ArrayList<Integer>();
 	int[] value = {0,0};
-	Map<String, int[]> symbol_table;
+	Map<String, int[]> symbol_table = new HashMap< String,int[]>();
 	//ArrayList<ArrayList<Integer>> value = new ArrayList<ArrayList<Integer>>();
-	Map<String, Integer> unknown_labels;
+	Map<String, Integer> unknown_labels = new HashMap< String,Integer>();
 	
 	public Bytecode(ArrayList<String> s) {
 		source = s;
 	}
 	
 	int decl(String var, int type){
-		String var_name = "main" + "_" + var;
+		String var_name = var;
 		int[] v = {++fo, type};
 		symbol_table.put(var_name, v);
+		System.out.println("this_is_decl"+var_name+v[0]);
 		// reserve a space in the stack for the variable by generating the following code
 		pushi(0);
 		return 0;
@@ -60,32 +61,35 @@ public class Bytecode {
 	int lab(String lable) {
 		int[] v = {++fo, LABEL};
 		if (unknown_labels.get(lable) == null) {
-			String key = "main" + "_" + lable;
+			String key = lable;
 			symbol_table.put(key, v);
 		}
 		else {
-			symbol_table.put(lable, v);
+			symbol_table.get(lable)[1] = v[1];
+			//symbol_table.put(lable, v);
 		}
 		return 0;
 	}
 	
 	int subr(int argNum, String flabel) {
-		String k = "main" + "_" + flabel;
+		String k = flabel;
 		int[] v = {++fo, argNum};
 		symbol_table.put(k, v);
+		//System.out.println("subr: here");
 		return 0;
 	}
 	
 	int ret() {
 		pushi(0);
 		mem.add(POPA);
-		mem.add(HALT);
+		mem.add(RET);
 		pc = pc+2;
 		return 0;
 	}
 	
 	int printi(int literal) {
-		pushi(0);
+		System.out.println(literal);
+		pushi(literal);
 		mem.add(PRINTI);
 		pc += 1;
 		return 0;
@@ -99,7 +103,7 @@ public class Bytecode {
 			pc++;
 		}
 		else {
-			String label_name = "main" + "_" + label;
+			String label_name = label;
 			unknown_labels.put(label_name, 0);
 		}
 		return 0;
@@ -113,7 +117,7 @@ public class Bytecode {
 			pc++;
 		}
 		else {
-			String label_name = "main" + "_" + label;
+			String label_name = label;
 			unknown_labels.put(label_name, 0);
 		}
 		return 0;
@@ -136,16 +140,17 @@ public class Bytecode {
 	
 	int pushi(int v){
 		byte[] result = new byte[4];
-
+		
 		result[0] = (byte) (v >> 24);
 		result[1] = (byte) (v >> 16);
 		result[2] = (byte) (v >> 8);
 		result[3] = (byte) (v /*>> 0*/);
+//		System.out.println(v+":"+result[0]+","+result[1]+","+result[2]+","+result[3]);
 		mem.add(PUSHI);
-		mem.add((int)result[0]);
-		mem.add((int)result[1]);
-		mem.add((int)result[2]);
 		mem.add((int)result[3]);
+		mem.add((int)result[2]);
+		mem.add((int)result[1]);
+		mem.add((int)result[0]);
 		pc += 5;
 		return 0;
 	}
@@ -176,6 +181,7 @@ public class Bytecode {
 	}
 	int popv(String label) {
 		int[] p;
+		System.out.println(label);
 		p = symbol_table.get(label);
 		pushi(p[0]);
 		mem.add(POPV);
@@ -233,21 +239,23 @@ public class Bytecode {
 //			System.out.println(str + "," );
 //		}
 		String operation = tokens[0];
+		System.out.println("token[0]:  "+tokens[0]);
 		switch(operation) {
 			case("decl"):
-				if (tokens[2] == "int") decl(tokens[1], INT);
+				decl(tokens[1], INT);
 				break;
 			case("lab"):
 				lab(tokens[1]);
 				break;
 			case("subr"):
-				subr(Integer.parseInt(tokens[1]), "main");
+				subr(Integer.parseInt(tokens[1]), tokens[2]);
 				break;
 			case("ret"):
 				ret();
+//				System.out.println("subr"+k);
 				break;			
 			case("printi"):
-				printi(0);
+				printi(Integer.parseInt(tokens[1]));
 				break;
 			case("printv"):
 				printv(tokens[1]);
@@ -301,7 +309,6 @@ public class Bytecode {
 			case("div"): 
 				div();
 				break;
-
 		}
 	}
 	
@@ -312,12 +319,20 @@ public class Bytecode {
 	
 	int compile() {
 		int i = 0;
+		pushi(16);
+		pushi(17);
+		pushi(1);
+		mem.add(44);
+		mem.add(0);
+//		System.out.println(source);
 		for (String str : source){
 			sc = i + 1;
-			parse(str);
-			// Check that source code ends with RET
-			// save mem into des (destination in slide 3 -> compile result saved in .smp file)
-			//des = (byte)mem;
+//			System.out.println("grep:"+str+"\n");
+//			System.out.println("checkif:"+!str.isEmpty()+"\n");
+			if (!str.isEmpty() && str.contains("//")==false) {
+				System.out.println("check:"+str+"\n");
+				parse(str);
+			}
 		}
 		return 0;
 	}
