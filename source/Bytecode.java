@@ -27,8 +27,8 @@ public class Bytecode {
 	public static final int INT = 1;
 	public static final int FLOAT = 2;
 	public static final int RET = 48;
-	//bytecode to  write
-	//int code;
+	//runtime stack pointer
+	int code;
 	// current line being compiled
 	int sc = 0;
 	// program counter
@@ -50,7 +50,7 @@ public class Bytecode {
 	
 	int decl(String var, int type){
 		String var_name = var;
-		int[] v = {++fo, type};
+		int[] v = {fo++, type};
 		symbol_table.put(var_name, v);
 		System.out.println("this_is_decl"+var_name+v[0]);
 		// reserve a space in the stack for the variable by generating the following code
@@ -59,14 +59,32 @@ public class Bytecode {
 	}
 	
 	int lab(String lable) {
-		int[] v = {++fo, LABEL};
 		if (unknown_labels.get(lable) == null) {
+			
+			int[] v = {pc, LABEL};
 			String key = lable;
 			symbol_table.put(key, v);
 		}
 		else {
-			symbol_table.get(lable)[1] = v[1];
-			//symbol_table.put(lable, v);
+			int mem_place_to_change = unknown_labels.get(lable);
+			int put_in_mem_value = pc;
+			byte[] result = new byte[4];
+			System.out.println("this_is_save_in_lab  "+mem_place_to_change);
+			System.out.println("this_is_value_in_lab  "+put_in_mem_value);
+			result[0] = (byte) (put_in_mem_value >> 24);
+			result[1] = (byte) (put_in_mem_value >> 16);
+			result[2] = (byte) (put_in_mem_value >> 8);
+			result[3] = (byte) (put_in_mem_value /*>> 0*/);
+			mem.set(mem_place_to_change+1, (int)result[3]);
+			mem.set(mem_place_to_change+2, (int)result[2]);
+			mem.set(mem_place_to_change+3, (int)result[1]);
+			mem.set(mem_place_to_change+4, (int)result[0]);
+			System.out.println("result  "+mem.get(mem_place_to_change+1)+"  "+(int)result[3]);
+			System.out.println("result  "+mem.get(mem_place_to_change+2)+"  "+(int)result[2]);
+			System.out.println("result  "+mem.get(mem_place_to_change+3)+"  "+(int)result[1]);
+			System.out.println("result  "+mem.get(mem_place_to_change+4)+"  "+(int)result[0]);
+			//String key = lable;
+			//symbol_table.put(key, v);
 		}
 		return 0;
 	}
@@ -104,7 +122,10 @@ public class Bytecode {
 		}
 		else {
 			String label_name = label;
-			unknown_labels.put(label_name, 0);
+			unknown_labels.put(label_name, pc);
+			pushi(0);
+			mem.add(JMP);
+			pc++;
 		}
 		return 0;
 	}
@@ -113,12 +134,17 @@ public class Bytecode {
 		p = symbol_table.get(label);
 		if (p != null) {
 			pushi(p[0]);
-			mem.add(JMP);
+			mem.add(JMPC);
 			pc++;
 		}
 		else {
 			String label_name = label;
-			unknown_labels.put(label_name, 0);
+			unknown_labels.put(label_name, pc);
+			System.out.println("this_is_save_in_mem  "+pc);
+			pushi(0);
+			mem.add(JMPC);
+			
+			pc++;
 		}
 		return 0;
 	}
@@ -159,12 +185,12 @@ public class Bytecode {
 		int[] p;
 		p = symbol_table.get(var);
 		pushi(p[0]);
-		pushvi(var);
+		pushv(var);
 		//mem.add(PRINTV);
 		return 0;
 	}
 	
-	int pushvi(String var) {
+	int pushv(String var) {
 		int[] p;
 		p = symbol_table.get(var);
 		pushi(p[0]);
@@ -279,8 +305,8 @@ public class Bytecode {
 				int v = Integer.parseInt(tokens[1]);
 				pushi(v);
 				break;		
-			case("pushvi"):
-				pushvi(tokens[1]);
+			case("pushv"):
+				pushv(tokens[1]);
 				break;
 			case("popm"):
 				popm(Integer.parseInt(tokens[1]));
@@ -330,7 +356,7 @@ public class Bytecode {
 //			System.out.println("grep:"+str+"\n");
 //			System.out.println("checkif:"+!str.isEmpty()+"\n");
 			if (!str.isEmpty() && str.contains("//")==false) {
-				System.out.println("check:"+str+"\n");
+//				System.out.println("check:"+str+"\n");
 				parse(str);
 			}
 		}
