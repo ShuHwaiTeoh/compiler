@@ -1,7 +1,6 @@
 import java.util.ArrayList;
 import java.util.*;
 
-
 public class Bytecode {
 	public static final int HALT = 0;
 	public static final int JMP = 36;
@@ -42,7 +41,7 @@ public class Bytecode {
 	int[] value = {0,0};
 	Map<String, int[]> symbol_table = new HashMap< String,int[]>();
 	//ArrayList<ArrayList<Integer>> value = new ArrayList<ArrayList<Integer>>();
-	Map<String, Integer> unknown_labels = new HashMap< String,Integer>();
+	Map<String, ArrayList<Integer>> unknown_labels = new HashMap< String,ArrayList<Integer>>();
 	
 	public Bytecode(ArrayList<String> s) {
 		source = s;
@@ -66,25 +65,31 @@ public class Bytecode {
 			symbol_table.put(key, v);
 		}
 		else {
-			int mem_place_to_change = unknown_labels.get(lable);
-			int put_in_mem_value = pc;
-			byte[] result = new byte[4];
-			System.out.println("this_is_save_in_lab  "+mem_place_to_change);
-			System.out.println("this_is_value_in_lab  "+put_in_mem_value);
-			result[0] = (byte) (put_in_mem_value >> 24);
-			result[1] = (byte) (put_in_mem_value >> 16);
-			result[2] = (byte) (put_in_mem_value >> 8);
-			result[3] = (byte) (put_in_mem_value /*>> 0*/);
-			mem.set(mem_place_to_change+1, (int)result[3]);
-			mem.set(mem_place_to_change+2, (int)result[2]);
-			mem.set(mem_place_to_change+3, (int)result[1]);
-			mem.set(mem_place_to_change+4, (int)result[0]);
-			System.out.println("result  "+mem.get(mem_place_to_change+1)+"  "+(int)result[3]);
-			System.out.println("result  "+mem.get(mem_place_to_change+2)+"  "+(int)result[2]);
-			System.out.println("result  "+mem.get(mem_place_to_change+3)+"  "+(int)result[1]);
-			System.out.println("result  "+mem.get(mem_place_to_change+4)+"  "+(int)result[0]);
-			//String key = lable;
-			//symbol_table.put(key, v);
+			ArrayList<Integer> mem_place_to_change = unknown_labels.get(lable);
+			int put_in_mem_value = pc+1;//// we add it without reason??
+			for(int k :  mem_place_to_change) {
+				byte[] result = new byte[4];
+				System.out.println("###########################################");
+				System.out.println("this_is_save_in_lab  "+mem_place_to_change);
+				System.out.println("this_is_value_in_lab  "+put_in_mem_value);
+				result[0] = (byte) (put_in_mem_value >> 24);
+				result[1] = (byte) (put_in_mem_value >> 16);
+				result[2] = (byte) (put_in_mem_value >> 8);
+				result[3] = (byte) (put_in_mem_value /*>> 0*/);
+				System.out.println("result b "+mem.get(k+1));
+				System.out.println("result b "+mem.get(k+2));
+				System.out.println("result b "+mem.get(k+3));
+				System.out.println("result b "+mem.get(k+4));
+				mem.set(k+1, (int)result[3]);
+				mem.set(k+2, (int)result[2]);
+				mem.set(k+3, (int)result[1]);
+				mem.set(k+4, (int)result[0]);
+				System.out.println("result a "+mem.get(k+1)+"  "+(int)result[3]);
+				System.out.println("result a "+mem.get(k+2)+"  "+(int)result[2]);
+				System.out.println("result a "+mem.get(k+3)+"  "+(int)result[1]);
+				System.out.println("result a "+mem.get(k+4)+"  "+(int)result[0]);
+				System.out.println("###########################################");
+			}
 		}
 		return 0;
 	}
@@ -114,37 +119,60 @@ public class Bytecode {
 	}
 	int jmp(String label) {
 		int[] p;
+		pc++;
+		System.out.println("jmp: "+label+" "+pc);
 		p = symbol_table.get(label);
 		if (p != null) {
 			pushi(p[0]);
 			mem.add(JMP);
-			pc++;
+//			pc++;
 		}
 		else {
 			String label_name = label;
-			unknown_labels.put(label_name, pc);
-			pushi(0);
-			mem.add(JMP);
-			pc++;
+			if (unknown_labels.get(label_name)!=null) {
+				unknown_labels.get(label_name).add(pc);
+				unknown_labels.put(label_name, unknown_labels.get(label_name));
+				pushi(0);
+				mem.add(JMP);
+			}
+			else {
+				ArrayList<Integer> arrlist = new ArrayList<Integer>();
+				arrlist.add(pc);
+				unknown_labels.put(label_name, arrlist);
+				pushi(0);
+				mem.add(JMP);
+			}
+			
+//			pc++;
 		}
 		return 0;
 	}
 	int jmpc(String label) {
 		int[] p;
+		pc++;
+		System.out.println("jmpc: "+label+" "+pc);
 		p = symbol_table.get(label);
 		if (p != null) {
 			pushi(p[0]);
 			mem.add(JMPC);
-			pc++;
+//			pc++;
 		}
 		else {
 			String label_name = label;
-			unknown_labels.put(label_name, pc);
-			System.out.println("this_is_save_in_mem  "+pc);
-			pushi(0);
-			mem.add(JMPC);
-			
-			pc++;
+			if (unknown_labels.get(label_name)!=null) {
+				unknown_labels.get(label_name).add(pc);
+				unknown_labels.put(label_name, unknown_labels.get(label_name));
+				pushi(0);
+				mem.add(JMPC);
+			}
+			else {
+				ArrayList<Integer> arrlist = new ArrayList<Integer>();
+				arrlist.add(pc);
+				unknown_labels.put(label_name, arrlist);
+				pushi(0);
+				mem.add(JMPC);
+			}
+//			pc++;
 		}
 		return 0;
 	}
@@ -350,6 +378,7 @@ public class Bytecode {
 		pushi(1);
 		mem.add(44);
 		mem.add(0);
+		pc=pc+2;
 //		System.out.println(source);
 		for (String str : source){
 			sc = i + 1;
